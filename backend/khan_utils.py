@@ -1,47 +1,26 @@
 import requests
 
-def search_khan_academy(query):
-    url = "https://khan-proxy.bhavjit.com/api/internal/graphql"
-    headers = {
-        "Content-Type": "application/json",
-        "Origin": "https://www.khanacademy.org",
-        "Referer": "https://www.khanacademy.org/"
-    }
-
-    payload = {
-        "operationName": "videosLibrarySearch",
-        "variables": {
-            "query": query,
-            "limit": 5
-        },
-        "query": """
-            query videosLibrarySearch($query: String, $limit: Int) {
-              videosLibrarySearch(query: $query, limit: $limit) {
-                title
-                url
-                description
-              }
-            }
-        """
-    }
+def search_khan_academy(query, limit=10):
+    url = f"https://khan-api.bhavjit.com/api/search?q={query}&limit={limit}"
 
     try:
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.get(url)
+        response.raise_for_status()
         data = response.json()
-        videos = data.get("data", {}).get("videosLibrarySearch", [])
         results = []
 
-        for vid in videos:
+        for video in data:
             results.append({
-                "video_id": vid["url"].split("/")[-1],  # use slug as ID
-                "title": vid["title"],
-                "description": vid.get("description", ""),
-                "url": f'https://www.khanacademy.org{vid["url"]}',
+                "video_id": video.get("youtube_id", video.get("id")),
+                "title": video.get("title", ""),
+                "description": video.get("description", ""),
+                "url": f"https://www.khanacademy.org{video['url']}" if "url" in video else "",
                 "source": "Khan Academy"
             })
 
+        print(f"🎓 Fetched {len(results)} Khan Academy videos")
         return results
 
     except Exception as e:
-        print("Khan Academy API error:", e)
+        print("❌ Khan Academy API error:", e)
         return []

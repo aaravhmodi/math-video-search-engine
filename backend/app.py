@@ -4,17 +4,14 @@ from dotenv import load_dotenv
 import os
 
 from youtube_utils import search_youtube
-from khan_utils import search_khan_academy
 from elasticsearch_utils import store_video, search_elasticsearch
-# from huggingface_utils import enhance_query
 from enhance_query import enhance_query
-
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins="http://localhost:3000")
 
 @app.route("/search", methods=["GET"])
 def search():
@@ -22,11 +19,11 @@ def search():
     if not query:
         return jsonify({"error": "Query is required"}), 400
 
-    # Step 1: Use Hugging Face to enhance query
+    # Step 1: Enhance the query
     enhanced_query = enhance_query(query)
     print(f"🔁 Query enhanced: {query} → {enhanced_query}")
 
-    # Step 2: Search in Elasticsearch first
+    # Step 2: Search Elasticsearch
     local_results = search_elasticsearch(enhanced_query)
     if local_results:
         print(f"✅ Found {len(local_results)} results in Elasticsearch")
@@ -35,26 +32,24 @@ def search():
             "enhanced_query": enhanced_query
         })
 
-    # Step 3: Fallback to YouTube + Khan if nothing found
+    # Step 3: Fallback to YouTube only
     youtube_results = search_youtube(enhanced_query)
-    khan_results = search_khan_academy(enhanced_query)
-    combined_results = youtube_results + khan_results
 
-    # Step 4: Store new results in Elasticsearch
-    for vid in combined_results:
+    # Step 4: Store YouTube results in Elasticsearch
+    for vid in youtube_results:
         store_video(
             video_id=vid["video_id"],
             title=vid["title"],
             description=vid.get("description", ""),
-            transcript=vid.get("transcript", ""),  # optional
-            source=vid.get("source", "unknown"),
-            url=vid.get("url", "")
+            transcript=vid.get("transcript", ""),
+            source=vid.get("source", "YouTube"),
+            url=vid.get("url", f"https://www.youtube.com/watch?v={vid['video_id']}")
         )
 
-    print(f"🆕 Stored {len(combined_results)} new results in Elasticsearch")
+    print(f"🆕 Stored {len(youtube_results)} YouTube results in Elasticsearch")
 
     return jsonify({
-        "videos": combined_results,
+        "videos": youtube_results,
         "enhanced_query": enhanced_query
     })
 

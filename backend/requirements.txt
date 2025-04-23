@@ -1,0 +1,6 @@
+Flask
+flask-cors
+requests
+sentence-transformers
+python-dotenv
+elasticsearch

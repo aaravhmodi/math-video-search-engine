@@ -7,7 +7,7 @@ export default function Home() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [enhancedQuery, setEnhancedQuery] = useState(""); // ✅ New
+  const [enhancedQuery, setEnhancedQuery] = useState("");
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -21,7 +21,7 @@ export default function Home() {
       const res = await fetch(`http://localhost:5000/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setResults(data.videos || []);
-      setEnhancedQuery(data.enhanced_query || ""); // ✅ Store enhanced query
+      setEnhancedQuery(data.enhanced_query || "");
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");
